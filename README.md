@@ -1,5 +1,5 @@
 # 🎮 Minestrator-Restart
-自动重启 Minestrator 服务器，每天定时运行。
+[Minestrator](https://minestrator.com) 提供免费的 Minecraft 服务器托管，但每 4 小时会强制关机一次。本项目通过定时自动重启，绕过这一限制，实现服务器持续保活。
 
 ## 🔐 Secrets 配置
 **Settings → Secrets and variables → Actions → New repository secret** 添加以下变量：

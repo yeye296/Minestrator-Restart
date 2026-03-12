@@ -38,9 +38,9 @@ def send_tg(result, detail=''):
     msg = (
         f"🎮 Minestrator 重启通知\n"
         f"🕐 运行时间: {now_str()}\n"
-        f"🖥 服务器: Minestrator #{SERVER_ID}\n"
+        f"🖥 服务器: 🇫🇷 Minestrator-FR\n"
         f"📊 结果: {result}\n"
-        f"📝 详情: {detail}"
+        f"{detail}"
     )
     url  = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
     data = urllib.parse.urlencode({"chat_id": TG_CHAT_ID, "text": msg}).encode()
@@ -260,7 +260,25 @@ def run_script():
             send_tg("❌ API 重启请求失败", f"Token长度={len(token)}")
             return
 
-        send_tg("✅ 重启成功！", f"Token长度={len(token)}")
+        # ── 读取剩余时间 ──────────────────────────────────────
+        time.sleep(3)
+        try:
+            remaining = sb.execute_script(r"""
+                (function(){
+                    var spans = document.querySelectorAll('[data-slot="base"] span');
+                    var parts = [];
+                    for (var i = 0; i < spans.length; i++) {
+                        var t = spans[i].textContent.trim();
+                        if (/^\d+[hms]$/.test(t)) parts.push(t);
+                    }
+                    return parts.length ? parts.join(' ') : '';
+                })()
+            """)
+            detail = f"⏰ 利用期限：{remaining}" if remaining else "⏰ 利用期限：获取失败"
+        except Exception:
+            detail = "利用期限：获取失败"
+        print(f"⏱️ {detail}")
+        send_tg("✅ 重启成功！", detail)
 
 
 if __name__ == "__main__":

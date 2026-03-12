@@ -260,8 +260,11 @@ def run_script():
             send_tg("❌ API 重启请求失败", f"Token长度={len(token)}")
             return
 
-        # ── 读取剩余时间 ──────────────────────────────────────
-        time.sleep(3)
+        # ── 刷新页面，等待剩余时间更新 ──────────────────────
+        print("🔄 刷新页面等待利用期限更新...")
+        time.sleep(5)
+        sb.open(SERVER_URL)
+        time.sleep(5)
         try:
             remaining = sb.execute_script(r"""
                 (function(){

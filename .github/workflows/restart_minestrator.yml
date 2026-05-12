@@ -73,6 +73,7 @@ jobs:
           PYTHONIOENCODING: utf-8
           MINESTRATOR_ACCOUNT: ${{ secrets.MINESTRATOR_ACCOUNT }}
           MINESTRATOR_SERVER_ID: ${{ secrets.MINESTRATOR_SERVER_ID }}
+          MINESTRATOR_BOX_ID: ${{ secrets.MINESTRATOR_BOX_ID }}
           MINESTRATOR_AUTH: ${{ secrets.MINESTRATOR_AUTH }}
           GOST_PROXY: ${{ secrets.GOST_PROXY }}
           TG_BOT: ${{ secrets.TG_BOT }}

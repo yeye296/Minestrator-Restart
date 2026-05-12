@@ -10,6 +10,7 @@ _account = os.environ["MINESTRATOR_ACCOUNT"].split(",")
 EMAIL      = _account[0].strip()
 PASSWORD   = _account[1].strip()
 SERVER_ID  = os.environ.get("MINESTRATOR_SERVER_ID", "").strip()
+BOX_ID     = os.environ.get("MINESTRATOR_BOX_ID", "156704").strip()
 AUTH_TOKEN = os.environ.get("MINESTRATOR_AUTH", "").strip()
 
 _proxy = os.environ.get("GOST_PROXY", "").strip()
@@ -22,6 +23,8 @@ TG_TOKEN   = _tg.split(",")[1].strip() if _tg and "," in _tg else ""
 LOGIN_URL  = "https://minestrator.com/connexion"
 SERVER_URL = f"https://minestrator.com/my/server/{SERVER_ID}"
 API_URL    = f"https://mine.sttr.io/server/{SERVER_ID}/poweraction"
+RENEW_URL  = f"https://minestrator.com/my/box/{BOX_ID}/renewFree"
+RENEW_API_URL  = f"https://mine.sttr.io/mybox/{BOX_ID}/free/renew"
 
 # ============================================================
 # TG 推送（可选）
@@ -135,18 +138,25 @@ def wait_for_token(sb, timeout=60) -> str:
 # ============================================================
 
 def send_restart(sb, token: str) -> bool:
-    token_js = json.dumps(token)
+    # 1. 根据 token 是否存在构造不同的 payload
+    if token:
+        payload = { "poweraction": "restart", "turnstile_token": token }
+        action_name = "重启"
+    else:
+        payload = { "poweraction": "start" }
+        action_name = "启动"
+    payload_js = json.dumps(payload)
     script = (
         "var done = arguments[0];"
-        'fetch("' + API_URL + '", {'
+        f"fetch('{API_URL}', {{"
         '  method: "PUT",'
         '  headers: {'
-        '    "Authorization": "' + AUTH_TOKEN + '",'
+        f'    "Authorization": "{AUTH_TOKEN}",'
         '    "Content-Type": "application/json",'
         '    "Accept": "application/json",'
         '    "X-Requested-With": "XMLHttpRequest"'
         '  },'
-        '  body: JSON.stringify({poweraction: "restart", turnstile_token: ' + token_js + '})'
+        f'  body: JSON.stringify({payload_js})'
         '})'
         '.then(function(r){ return r.json(); })'
         '.then(function(data){ done({ok: true, data: data}); })'
@@ -156,7 +166,34 @@ def send_restart(sb, token: str) -> bool:
         result = sb.execute_async_script(script)
         print(f"📡 API响应：{result}")
         if result.get("ok") and result.get("data", {}).get("api", {}).get("code") == 200:
-            print("✅ 重启指令已成功送达！")
+            print(f"✅ {action_name}指令已成功送达！")
+            return True
+        print(f"❌ API返回异常：{result}")
+        return False
+    except Exception as e:
+        print(f"⚠️ API请求异常：{e}")
+        return False
+    
+def send_renew(sb) -> bool:
+    script = (
+        "var done = arguments[0];"
+        'fetch("' + RENEW_API_URL + '", {'
+        '  method: "POST",'
+        '  headers: {'
+        '    "Authorization": "' + AUTH_TOKEN + '",'
+        '    "Content-Type": "application/json",'
+        '    "Accept": "*/*",'
+        '  },'
+        '})'
+        '.then(function(r){ return r.json(); })'
+        '.then(function(data){ done({ok: true, data: data}); })'
+        '.catch(function(err){ done({ok: false, error: err.toString()}); });'
+    )
+    try:
+        result = sb.execute_async_script(script)
+        print(f"📡 API响应：{result}")
+        if result.get("ok") and result.get("data", {}).get("api", {}).get("code") == 200:
+            print("✅ 续期请求已成功送达！")
             return True
         print(f"❌ API返回异常：{result}")
         return False
@@ -236,6 +273,22 @@ def run_script():
             print("❌ 登录等待超时")
             sb.save_screenshot("login_timeout.png")
             return
+        
+        # ── 跳转续期页 ──────────────────────────────────
+        print(f"🔃 跳转至续期页：{RENEW_URL}")
+        sb.open(RENEW_URL)
+        time.sleep(6)
+        print(f"📄 当前页面：{sb.get_current_url()}")
+        sb.save_screenshot("renew_page.png")
+
+        # ── 发送续期请求 ──────────────────────────────────────
+        src = sb.get_page_source()
+        if "Renewal unavailable" in src:
+            print("📄 续期不可用，还未到续期时间")
+        else:
+            if not send_renew(sb):
+                sb.save_screenshot("renew_api_fail.png")
+                send_tg("❌ API 续期请求失败")
 
         # ── 跳转服务器管理页 ──────────────────────────────────
         print(f"🔃 跳转至服务器管理页：{SERVER_URL}")
@@ -252,12 +305,12 @@ def run_script():
         if not token:
             sb.save_screenshot("token_timeout.png")
             send_tg("❌ Token 获取超时", "Turnstile 未能自动完成")
-            return
+            # return
 
         # ── 发送重启指令 ──────────────────────────────────────
         if not send_restart(sb, token):
             sb.save_screenshot("api_fail.png")
-            send_tg("❌ API 重启请求失败", f"Token长度={len(token)}")
+            send_tg("❌ API 启动/重启请求失败", f"Token长度={len(token)}")
             return
 
         # ── 刷新页面，等待剩余时间更新 ──────────────────────

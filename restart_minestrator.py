@@ -138,13 +138,12 @@ def wait_for_token(sb, timeout=60) -> str:
 # ============================================================
 
 def send_restart(sb, token: str) -> bool:
-    # 1. 根据 token 是否存在构造不同的 payload
     if token:
         payload = { "poweraction": "restart", "turnstile_token": token }
         action_name = "重启"
     else:
-        payload = { "poweraction": "start" }
-        action_name = "启动"
+        payload = { "poweraction": "restart" }
+        action_name = "重启"
     payload_js = json.dumps(payload)
     script = (
         "var done = arguments[0];"

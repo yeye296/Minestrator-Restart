@@ -234,7 +234,7 @@ def run_script():
 
         print("✏️ 填写账号密码...")
         try:
-            sb.wait_for_element_visible("input[name='pseudo']", timeout=20)
+            sb.wait_for_element_visible("input[name='pseudo']", timeout=60)
             sb.type("input[name='pseudo']", EMAIL)
             sb.type("input[name='password']", PASSWORD)
             try:

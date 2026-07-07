@@ -234,31 +234,36 @@ def run_script():
 
         print("✏️ 填写账号密码...")
         try:
-            sb.wait_for_element_visible("input[name='pseudo']", timeout=60)
-            sb.type("input[name='pseudo']", EMAIL)
-            sb.type("input[name='password']", PASSWORD)
+            username_selector = "input[type='text'], input[placeholder*='utilisateur'], input[name='pseudo']"
+            password_selector = "input[type='password'], input[name='password']"
+            
+            sb.wait_for_element_visible(username_selector, timeout=20)
+            sb.type(username_selector, EMAIL)
+            sb.type(password_selector, PASSWORD)
             try:
                 sb.execute_script(
-                    "var r=document.querySelector('#remember'); if(r) r.checked=true;"
+                    "var r=document.querySelector('input[type=\"checkbox\"], #remember'); if(r) r.checked=true;"
                 )
             except Exception:
                 pass
-        except Exception:
-            print("❌ 登录框加载失败")
+        except Exception as e:
+            print(f"❌ 登录框加载失败，报错详情: {e}")
             sb.save_screenshot("login_fail.png")
             return
 
         print("📤 提交登录请求...")
         try:
-            sb.find_element("button[type='submit']").click()
-        except Exception:
-            try:
-                sb.find_element(".btn-text").click()
-            except Exception:
-                print("❌ 登录按钮不可用")
-                sb.save_screenshot("login_submit_fail.png")
-                return
-
+            if sb.is_element_visible('button:contains("Se connecter")'):
+                sb.click('button:contains("Se connecter")')
+            elif sb.is_element_visible("button[type='submit']"):
+                sb.click("button[type='submit']")
+            else:
+                sb.click(".btn-text")
+        except Exception as e:
+            print(f"❌ 登录按钮不可用，报错详情: {e}")
+            sb.save_screenshot("login_submit_fail.png")
+            return
+        
         print("⏳ 等待登录跳转...")
         for _ in range(40):
             try:
@@ -320,11 +325,11 @@ def run_script():
         try:
             remaining = sb.execute_script(r"""
                 (function(){
-                    var spans = document.querySelectorAll('[data-slot="base"] span');
+                    var spans = document.querySelectorAll('[data-slot="base"] span, .time-remaining, span:contains("h")');
                     var parts = [];
                     for (var i = 0; i < spans.length; i++) {
                         var t = spans[i].textContent.trim();
-                        if (/^\d+[hms]$/.test(t)) parts.push(t);
+                        if (/^\d+[hms]$/.test(t) || /\d+\s*heur/.test(t)) parts.push(t);
                     }
                     return parts.length ? parts.join(' ') : '';
                 })()

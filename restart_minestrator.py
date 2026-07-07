@@ -253,6 +253,7 @@ def run_script():
 
         print("📤 提交登录请求...")
         try:
+            time.sleep(10)
             if sb.is_element_visible('button:contains("Se connecter")'):
                 sb.click('button:contains("Se connecter")')
             elif sb.is_element_visible("button[type='submit']"):
